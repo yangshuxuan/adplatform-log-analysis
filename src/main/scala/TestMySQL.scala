@@ -7,11 +7,13 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.apache.spark.sql.streaming.StreamingQuery
+import java.util._
 object TestMySQL {
   val url="jdbc:mysql://61.160.47.31:3306/adCenter"
   val user ="root"
   val pwd = "fvsh2225"
   def main(args: Array[String]) {
+    TimeZone.setDefault(TimeZone.getTimeZone("GMT+0")) //由于窗口函数是以UTC为计算单位的，而不是以当前时区为计算单位
     val spark = SparkSession
       .builder
       .appName("KafkaSparkMySQL")
@@ -22,7 +24,7 @@ object TestMySQL {
       spark
         .readStream
         .format("kafka")
-        .option("kafka.bootstrap.servers", "192.168.31.58:9092")
+        .option("kafka.bootstrap.servers", "dn120:19090,dn121:19091,dn122:19092")
         .option("subscribe", "log_adv")
         .option("startingOffsets", "latest")
         .option("maxPartitions", 10)
@@ -32,8 +34,9 @@ object TestMySQL {
     val streamingSelectDF: Dataset[(String, Long, String)] =
       streamingInputDF
         .select(get_json_object(($"value").cast("string"), "$.zone_id").alias("zone_id"),
-          get_json_object(($"value").cast("string"), "$.create_time").alias("create_time"))
-        .groupBy($"zone_id",window($"create_time".cast("timestamp"), "1 day"))
+          get_json_object(($"value").cast("string"), "$.create_time").cast("timestamp").alias("create_time"))
+        //.withWatermark("create_time", "5 minutes")
+        .groupBy($"zone_id",window($"create_time", "1 day"))
         .count()
         .select($"zone_id",$"count",date_format($"window.start","yyyy-MM-dd") as "pt")
         .as[(String,Long,String)]
@@ -42,7 +45,7 @@ object TestMySQL {
       try {
         val query = streamingSelectDF
           .writeStream
-          .option("checkpointLocation", "/user/hadoop/other2checkpoint")
+          .option("checkpointLocation", "/user/newspark/other2checkpoint")
           .foreach(writer)
           .outputMode("complete")
           .trigger(ProcessingTime("10 seconds"))
