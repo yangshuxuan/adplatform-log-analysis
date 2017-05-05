@@ -2,6 +2,8 @@
   * Created by Administrator on 2017/4/19.
   */
 package com.adups
+
+import grizzled.slf4j.Logger
 import org.apache.spark.sql.functions.{get_json_object, json_tuple}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.streaming.ProcessingTime
@@ -12,6 +14,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 import java.util.TimeZone
 object TestMySQL {
+  @transient lazy val logger = Logger[this.type]
   val url="jdbc:mysql://192.168.1.23:33061/adCenter"
   val user ="adcUsr"
   val pwd = """buzhi555&$collect%#DAO2017"""
@@ -20,9 +23,10 @@ object TestMySQL {
     "gaid", "os_version", "event", "imei", "mid",
     "packageName", "brand", "oper", "location_id",
     "modver", "language", "resolution", "sdk_version",
-    "apn", "app_id", "ad_id", "time", "platform", "vendor", "value",
+    "apn", "app_id", "ad_id", "time", "server_time","platform", "vendor", "value",
     "data_source", "intever", "click_effect").map(fieldName => StructField(fieldName,StringType,true)))
   def main(args: Array[String]) {
+    logger.info("Begin Running Spark Stream")
     TimeZone.setDefault(TimeZone.getTimeZone("GMT+0")) //由于窗口函数是以UTC为计算单位的，而不是以当前时区为计算单位
     val spark = SparkSession
       .builder
@@ -42,14 +46,14 @@ object TestMySQL {
         .select(from_json($"value".cast("string"),schema) as "log_adv")
         .select($"log_adv.app_id",
           $"log_adv.location_id",
-          $"log_adv.event",$"log_adv.imei",($"log_adv.time".cast("long")/1000).cast("timestamp") as "time")
+          $"log_adv.event",$"log_adv.imei",$"log_adv.server_time".cast("timestamp") as "server_time")
 
     val streamingSelectDF: Dataset[(String,String,String,Long,String)] =
       streamingInputDF
         .groupBy($"location_id",
           $"app_id",
           $"event",
-          window($"time","1 day")).agg(approx_count_distinct($"imei") as "count")
+          window($"server_time","1 day")).agg(approx_count_distinct($"imei") as "count")
         .select($"location_id",$"app_id", $"event",$"count",date_format($"window.start","yyyy-MM-dd") as "pt")
         .as[(String,String,String,Long,String)]
     val writer = new JDBCSink(url,user, pwd)
@@ -57,14 +61,14 @@ object TestMySQL {
       try {
         val query = streamingSelectDF
           .writeStream
-          .option("checkpointLocation", "/user/newspark/other2checkpoint")
+          .option("checkpointLocation", "/user/newspark/other5checkpoint")
           .foreach(writer)
           .outputMode("complete")
-          .trigger(ProcessingTime("10 seconds"))
+          .trigger(ProcessingTime("5 minutes"))
           .start()
         query.awaitTermination()
       } catch {
-        case ex:Throwable => println("YSX--" + ex.getMessage())
+        case ex:Throwable => logger.error("spark stream:" + ex.getMessage())
       }
     }
   }
