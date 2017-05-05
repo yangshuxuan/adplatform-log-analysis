@@ -8,7 +8,7 @@ import org.joda.time.LocalDate
 import Utility._
 import grizzled.slf4j.Logger
 
-class JDBCSink (url:String, user:String, pwd:String) extends ForeachWriter[(String,String,String, Long,String)] {
+class JDBCSink (url:String, user:String, pwd:String) extends ForeachWriter[cpMidCount] {
   @transient lazy val logger = Logger[this.type]
   val driver = "com.mysql.jdbc.Driver"
   var connection:Option[Connection] = None
@@ -28,13 +28,13 @@ class JDBCSink (url:String, user:String, pwd:String) extends ForeachWriter[(Stri
     }
   }
 
-  def process(value: (String,String,String,Long,String)): Unit = {
-    if(eventNames(value._3) && new LocalDate(value._5) > new LocalDate().minusDays(2)) {
-      val eventFieldName = s"event${value._3}"
-      val updateStatement = s"""update cp_mid_count set $eventFieldName = ${value._4} where location_id = "${value._1}" and app_id = "${value._2}" and pt = "${value._5}""""
+  def process(value: cpMidCount): Unit = {
+    if(eventNames(value.event) && new LocalDate(value.pt) > new LocalDate().minusDays(2)) {
+      val eventFieldName = s"event${value.event}"
+      val updateStatement = s"""update cp_mid_count set $eventFieldName = ${value.count} where location_id = "${value.location_id}" and app_id = "${value.app_id}" and pt = "${value.pt}" and provider ="${value.provider}""""
       val updateRows = statement.executeUpdate(updateStatement)
       if (updateRows == 0) {
-        val insertStatements =s"""INSERT INTO cp_mid_count(location_id,app_id,$eventFieldName,pt) VALUES("${value._1}","${value._2}",${value._4},"${value._5}")"""
+        val insertStatements =s"""INSERT INTO cp_mid_count(location_id,app_id,provider,$eventFieldName,pt) VALUES("${value.location_id}","${value.app_id}","${value.provider}",${value.count},"${value.pt}")"""
         val insertRows: Int = statement.executeUpdate(insertStatements)
       }
     }

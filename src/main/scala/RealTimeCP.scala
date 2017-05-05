@@ -1,19 +1,17 @@
-/**
-  * Created by Administrator on 2017/4/19.
-  */
 package com.adups
+import java.util.TimeZone
 
+//import com.adups.{JDBCSink, cpMidCount}
 import grizzled.slf4j.Logger
-import org.apache.spark.sql.functions.{get_json_object, json_tuple}
+import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.streaming.ProcessingTime
-import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
-import org.apache.spark.sql.streaming.StreamingQuery
-import org.apache.spark.sql._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.functions._
-import java.util.TimeZone
-object TestMySQL {
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+
+/**
+  * Created by Administrator on 2017/5/5.
+  */
+object RealTimeCP  {
   @transient lazy val logger = Logger[this.type]
   val url="jdbc:mysql://61.160.47.31:3306/adCenter"
   val user ="root"
@@ -29,24 +27,24 @@ object TestMySQL {
     logger.info("Begin Running Spark Stream")
     TimeZone.setDefault(TimeZone.getTimeZone("GMT+0")) //由于窗口函数是以UTC为计算单位的，而不是以当前时区为计算单位
     val spark = SparkSession
-      .builder
-      .appName("KafkaSparkMySQL")
-      .getOrCreate()
+        .builder
+        .appName("KafkaSparkMySQL")
+        .getOrCreate()
 
     import spark.implicits._
     val streamingInputDF: DataFrame =spark
-        .readStream
-        .format("kafka")
-        .option("kafka.bootstrap.servers", "dn120:19090,dn121:19091,dn122:19092")
-        .option("subscribe", "log_adv")
-        .option("startingOffsets", "latest")
-        .option("maxPartitions", 10)
-        .option("kafkaConsumer.pollTimeoutMs", 512)
-        .option("failOnDataLoss", false).load()
-        .select(from_json($"value".cast("string"),schema) as "log_adv")
-        .select($"log_adv.app_id",
-          $"log_adv.location_id",$"log_adv.provider",
-          $"log_adv.event",$"log_adv.imei",$"log_adv.server_time".cast("timestamp") as "server_time")
+      .readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", "dn120:19090,dn121:19091,dn122:19092")
+      .option("subscribe", "log_adv")
+      .option("startingOffsets", "latest")
+      .option("maxPartitions", 10)
+      .option("kafkaConsumer.pollTimeoutMs", 512)
+      .option("failOnDataLoss", false).load()
+      .select(from_json($"value".cast("string"),schema) as "log_adv")
+      .select($"log_adv.app_id",
+        $"log_adv.location_id",$"log_adv.provider",
+        $"log_adv.event",$"log_adv.imei",$"log_adv.server_time".cast("timestamp") as "server_time")
 
     val streamingSelectDF: Dataset[cpMidCount] =
       streamingInputDF
@@ -63,10 +61,10 @@ object TestMySQL {
       try {
         val query = streamingSelectDF
           .writeStream
-          .option("checkpointLocation", "/user/newspark/other5checkpoint")
+          .option("checkpointLocation", "/user/newspark/realtimesynccheckpoint/cp")
           .foreach(writer)
           .outputMode("complete")
-          .trigger(ProcessingTime("15 seconds"))
+          .trigger(ProcessingTime("5 minutes"))
           .start()
         query.awaitTermination()
       } catch {
