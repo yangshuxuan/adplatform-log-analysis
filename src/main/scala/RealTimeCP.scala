@@ -13,9 +13,9 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType}
   */
 object RealTimeCP  {
   @transient lazy val logger = Logger[this.type]
-  val url="jdbc:mysql://61.160.47.31:3306/adCenter"
-  val user ="root"
-  val pwd = """fvsh2225"""
+  val url="jdbc:mysql://192.168.1.23:33061/adCenter"
+  val user ="adcUsr"
+  val pwd = """buzhi555&$collect%#DAO2017"""
   val schema = StructType(List("proversion", "reportTag", "mac", "channel",
     "ad_type", "android_id", "provider", "model",
     "gaid", "os_version", "event", "imei", "mid",

@@ -13,6 +13,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 import java.util.TimeZone
+import org.apache.commons.daemon._
 object TestMySQL {
   @transient lazy val logger = Logger[this.type]
   val url="jdbc:mysql://61.160.47.31:3306/adCenter"
