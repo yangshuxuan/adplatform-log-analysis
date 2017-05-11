@@ -15,3 +15,8 @@ target
 project
 .idea
 spark-warehouse
+nflx
+src/main/scala/SerializationDemoRead.scala
+src/main/scala/SerializationDemoWirte.scala
+src/main/scala/worksheet2.sc
+src/main/scala/w1.st.sc
