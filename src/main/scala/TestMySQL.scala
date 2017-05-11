@@ -6,7 +6,7 @@ package com.adups
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{Encoders, SparkSession, Dataset}
 
-
+/*
 object TryWithTestDataBase  extends CPProcess[CPMidCount] {
 
   val url="jdbc:mysql://61.160.47.31:3306/adCenter"
@@ -22,4 +22,4 @@ object TryWithTestDataBase  extends CPProcess[CPMidCount] {
     new JDBCSink[CPMidCount](url,user, pwd)
   }
   def encoder=Encoders.product[CPMidCount]
-}
+}*/

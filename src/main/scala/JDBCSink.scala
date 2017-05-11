@@ -27,7 +27,7 @@ class JDBCSink[T <: MidCount] (url:String, user:String, pwd:String) extends Fore
     }
   }
   def process(midCount: T): Unit = {
-    if(midCount.isValidEvent && midCount.isExpire) {
+    if(midCount.isValid && midCount.isExpire) {
       val updateRows = statement.executeUpdate(midCount.updateStatement)
       if (updateRows == 0) {
         val insertRows: Int = statement.executeUpdate(midCount.insertStatements)

@@ -87,10 +87,12 @@ abstract class CPProcess[U <: MidCount]  {
 
   val checkpointLocation:String
   val triggerTime:String
-
-  def writer:JDBCSink[U]
+  val url:String
+  val user:String
+  val pwd:String
+  def writer:JDBCSink[U]=new JDBCSink[U](url,user, pwd)
   implicit def encoder:Encoder[U]
-
+  //implicit def encoder=Encoders.product[U]
   def createKafkaStream()(implicit spark:SparkSession) ={
     spark
       .readStream
