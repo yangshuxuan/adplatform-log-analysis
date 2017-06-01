@@ -11,10 +11,10 @@ object APKLinkStatistical extends CPProcess[APKLinkMidCount]{
   val url="jdbc:mysql://192.168.1.23:33061/adCenter"
   val user ="adcUsr"
   val pwd = """buzhi555&$collect%#DAO2017"""
-  val checkpointLocation = "/user/newspark/realtimesynccheckpoint/cp4"
-  val triggerTime = "5 minutes"
+  val checkpointLocation = "/user/newspark/realtimesynccheckpoint/cp11"
+  //val triggerTime = "30 seconds"
   implicit def toRealTimeCp[T](dataFrame: Dataset[T]):RealTimeCP[T] = new RealTimeCP[T](dataFrame){
-    def groupByFieldNames:List[String] = List("location_id","app_id","provider","ad_id","ad_type","event")
+    def groupByFieldNames:List[String] = List("location_id","app_id","provider","ad_id","ad_type","data_source","event")
   }
 
   def encoder=Encoders.product[APKLinkMidCount]
