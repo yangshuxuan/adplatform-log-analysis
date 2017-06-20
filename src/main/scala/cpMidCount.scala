@@ -30,6 +30,12 @@ abstract class MidCount{
     s"""INSERT INTO ${tableName}(location_id,app_id,provider,ad_id,ad_type,data_source,$eventFieldName,pt)
         |VALUES("${location_id}","${app_id}","${provider}","${ad_id}","${ad_type}","${data_source}",${count},"${pt}")""".stripMargin
 
+  def mergerStatements = s"""INSERT INTO ${tableName}(location_id,app_id,provider,ad_id,ad_type,data_source,
+                             |${eventFieldName},pt)
+                             |VALUES("${location_id}","${app_id}","${provider}",
+                             |"${ad_id}","${ad_type}","${data_source}",${count},"${pt}")
+                             |ON DUPLICATE KEY UPDATE  ${eventFieldName} = ${count} """.stripMargin
+
 }
 case class CPMidCount(location_id:String,app_id:String,
                       provider:String,ad_id:String,ad_type:String,data_source:String,

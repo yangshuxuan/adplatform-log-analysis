@@ -30,10 +30,11 @@ class JDBCSink[T <: MidCount] (url:String, user:String, pwd:String) extends Fore
     if(midCount.isValid && midCount.isExpire) {
 
       //logger.error(s"JDBCSinkOutput:${midCount.eventFieldName},${midCount.count}")
-      val updateRows = statement.executeUpdate(midCount.updateStatement)
+      statement.executeUpdate(midCount.mergerStatements)
+      /*val updateRows = statement.executeUpdate(midCount.updateStatement)
       if (updateRows == 0) {
         val insertRows: Int = statement.executeUpdate(midCount.insertStatements)
-      }
+      }*/
     }
   }
   def close(errorOrNull: Throwable): Unit = {
