@@ -8,9 +8,9 @@ import org.apache.spark.sql.{Encoder, SparkSession, Dataset}
 import org.apache.spark.sql.Encoders
 
 object GSStatistical extends CPProcess[GSMidCount]{
-  val url="jdbc:mysql://192.168.1.23:33061/adCenter"
-  val user ="adcUsr"
-  val pwd = """buzhi555&$collect%#DAO2017"""
+  val url=""
+  val user =""
+  val pwd = """"""
   val checkpointLocation = "/user/newspark/realtimesynccheckpoint/cp9"
   //val triggerTime = "2 minutes"
   implicit def toRealTimeCp[T](dataFrame: Dataset[T]):RealTimeCP[T] = new RealTimeCP[T](dataFrame){
