@@ -19,7 +19,7 @@ abstract class MidCount{
   def eventFieldName = s"event${event}"
   val eventNames = "100,101,102,103,801,803,802,804".split(",").toSet
   def isValid =  eventNames(event)
-  def isExpire = new LocalDate(pt) > new LocalDate().minusDays(2)
+  def isExpire = (new LocalDate(pt) compareTo new LocalDate().minusDays(2)) > 0
   def updateStatement =
     s"""update ${tableName} set $eventFieldName = ${count}
         |where location_id = "${location_id}" and app_id = "${app_id}"

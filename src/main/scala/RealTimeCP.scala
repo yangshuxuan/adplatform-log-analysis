@@ -85,7 +85,7 @@ abstract class CPProcess[U <: MidCount]  {
 
   implicit def toRealTimeCp[T](dataFrame: Dataset[T]):RealTimeCP[T]
 
-  val checkpointLocation:String
+  //val checkpointLocation:String
   //val triggerTime:String
   val url:String
   val user:String
@@ -104,7 +104,7 @@ abstract class CPProcess[U <: MidCount]  {
       .option("kafkaConsumer.pollTimeoutMs", 512)
       .option("failOnDataLoss", false).load()
   }
-  def run(customTrigerTime:String) {
+  def run(customTrigerTime:String,checkpointLocation:String) {
     logger.info("Begin Running Spark Stream")
     while(true) {
       try {
@@ -119,6 +119,7 @@ abstract class CPProcess[U <: MidCount]  {
       } catch {
         case ex:Throwable => logger.error("spark stream:" + ex.getMessage())
       }
+      Thread.sleep(2 * 60 * 1000)
     }
   }
   def main(args: Array[String]): Unit = {
@@ -130,6 +131,7 @@ abstract class CPProcess[U <: MidCount]  {
           |Usage: com.adups.CPStatistical <间隔时间量> <间隔时间单位>.
           |     <间隔时间量> 必须是整数
           |     <间隔时间单位> minutes,seconds,etc.
+          |     <checkpointLocation>
           |
         """.
             stripMargin
@@ -137,8 +139,8 @@ abstract class CPProcess[U <: MidCount]  {
         System.exit(1)
 
     }
-    if (args.length != 2) errorRemind()
-    val Array(intervalNum,intervalUnit)=args
+    if (args.length != 3) errorRemind()
+    val Array(intervalNum,intervalUnit,checkpointLocation)=args
     val timeUnitSet = Set("minutes","seconds","hours","days")
     try{
       intervalNum.toInt
@@ -146,7 +148,7 @@ abstract class CPProcess[U <: MidCount]  {
       if(! timeUnitSet(lowerIntevalUnit))
         throw new Throwable("Error Unit")
       println(s"$intervalNum $intervalUnit")
-      run(s"$intervalNum $intervalUnit")
+      run(s"$intervalNum $intervalUnit",checkpointLocation)
 
 
     }catch{
