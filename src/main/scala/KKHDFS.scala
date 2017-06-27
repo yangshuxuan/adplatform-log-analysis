@@ -71,11 +71,11 @@ abstract class SYNCProcess(val config:MySqlKafka)  {
     logger.info("Begin Running Spark Stream")
     while(true) {
       try {
-        val query = createKafkaStream()
+        val query = createKafkaStream()  //注释与cp实时统计类似
           .extractJson
           .selectAllColumns
           .addPt
-          .outputParquet(outputPath,checkpointLocation,customTrigerTime)
+          .outputParquet(outputPath,checkpointLocation,customTrigerTime) //以parquet格式输出到hdfs
         query.awaitTermination()
       } catch {
         case ex:Throwable => logger.error("spark stream:" + ex.getMessage())

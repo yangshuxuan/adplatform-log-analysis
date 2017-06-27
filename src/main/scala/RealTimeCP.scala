@@ -99,7 +99,7 @@ abstract class CPProcess[U <: MidCount]  {
       .format("kafka")
       .option("kafka.bootstrap.servers", "dn120:19090,dn121:19091,dn122:19092")
       .option("subscribe", "log_adv")
-      .option("startingOffsets", "latest")
+      .option("startingOffsets", "latest") //此处指定从kafka读取位移位置，如果现场目录指定了读取位置，那么该参数将会忽略，如何设置参考https://spark.apache.org/docs/2.1.0/structured-streaming-kafka-integration.html
       .option("maxPartitions", 10)
       .option("kafkaConsumer.pollTimeoutMs", 512)
       .option("failOnDataLoss", false).load()
@@ -108,13 +108,13 @@ abstract class CPProcess[U <: MidCount]  {
     logger.info("Begin Running Spark Stream")
     while(true) {
       try {
-        val query = createKafkaStream()
-          .extractJson
-          .selectUsedColumns
-          .castServerTime
-          .stats
-          .outputCPMidCount[U]
-          .outputMysql(writer,checkpointLocation,customTrigerTime)
+        val query = createKafkaStream()  //创建流，订阅kafka信息
+          .extractJson                   //提取kafka流的有效数据，并转换为dataframe的嵌套结构
+          .selectUsedColumns             //提取需要用来统计的字段
+          .castServerTime                //将时间字段转换为时间戳，以便后面的计算
+          .stats                         //加上时间窗口 进行group by 统计
+          .outputCPMidCount[U]           //强制转换为CPMidCount类型，这个类型也是本程序定义的
+          .outputMysql(writer,checkpointLocation,customTrigerTime) //输出到mysql，同时也指定了现场保存目录和运行的间隔时间
         query.awaitTermination()
       } catch {
         case ex:Throwable => logger.error("spark stream:" + ex.getMessage())
@@ -128,10 +128,10 @@ abstract class CPProcess[U <: MidCount]  {
         System.err.println("You arguments were " + args.mkString("[", ", ", "]"))
         System.err.println(
           """
-          |Usage: com.adups.CPStatistical <间隔时间量> <间隔时间单位>.
+          |Usage: com.adups.CPStatistical <间隔时间量> <间隔时间单位> <checkpointLocation>.
           |     <间隔时间量> 必须是整数
           |     <间隔时间单位> minutes,seconds,etc.
-          |     <checkpointLocation>
+          |     <checkpointLocation>  存放运行现场的hdfs目录
           |
         """.
             stripMargin
@@ -140,15 +140,15 @@ abstract class CPProcess[U <: MidCount]  {
 
     }
     if (args.length != 3) errorRemind()
-    val Array(intervalNum,intervalUnit,checkpointLocation)=args
+    val Array(intervalNum,intervalUnit,checkpointLocation)=args //分别将三个参数提取出来
     val timeUnitSet = Set("minutes","seconds","hours","days")
     try{
-      intervalNum.toInt
+      intervalNum.toInt   //检查时间间隔是否是整数
       val lowerIntevalUnit = intervalUnit.toLowerCase
-      if(! timeUnitSet(lowerIntevalUnit))
+      if(! timeUnitSet(lowerIntevalUnit))  //检查时间间隔单位是否合法
         throw new Throwable("Error Unit")
       println(s"$intervalNum $intervalUnit")
-      run(s"$intervalNum $intervalUnit",checkpointLocation)
+      run(s"$intervalNum $intervalUnit",checkpointLocation) //注意 此处未检查hdfs目录是否合法，因此运行之前用hdfs dfs -ls 检查一下
 
 
     }catch{

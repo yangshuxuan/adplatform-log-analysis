@@ -13,7 +13,7 @@ class JDBCSink[T <: MidCount] (url:String, user:String, pwd:String) extends Fore
   val driver = "com.mysql.jdbc.Driver"
   var connection:Option[Connection] = None
   var statement:Statement = _
-  def open(partitionId: Long,version: Long): Boolean = {
+  def open(partitionId: Long,version: Long): Boolean = { //每个partition于mysql建立连接
     Class.forName(driver)
     try {
       connection = Some(DriverManager.getConnection(url, user, pwd))
@@ -27,17 +27,17 @@ class JDBCSink[T <: MidCount] (url:String, user:String, pwd:String) extends Fore
     }
   }
   def process(midCount: T): Unit = {
-    if(midCount.isValid && midCount.isExpire) {
+    if(midCount.isValid && midCount.isExpire) {//检查记录是否合法和记录是否过期
 
       //logger.error(s"JDBCSinkOutput:${midCount.eventFieldName},${midCount.count}")
-      statement.executeUpdate(midCount.mergerStatements)
+      statement.executeUpdate(midCount.mergerStatements)  //插入或者更新数据
       /*val updateRows = statement.executeUpdate(midCount.updateStatement)
       if (updateRows == 0) {
         val insertRows: Int = statement.executeUpdate(midCount.insertStatements)
       }*/
     }
   }
-  def close(errorOrNull: Throwable): Unit = {
+  def close(errorOrNull: Throwable): Unit = { //关闭连接
     if(connection.nonEmpty)
       connection.get.close
   }

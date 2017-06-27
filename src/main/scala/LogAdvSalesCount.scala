@@ -94,12 +94,12 @@ object LogAdvSalesCount {
   def dealUsers(path:String,pt:String): Unit ={
     if(fileSystem.exists(new Path(path))) {
       val df = spark.read.parquet(path).select($"imei", when($"app_id".isNull,"0").otherwise($"app_id") as "app_id", $"pt")
-      val oldDf = df.filter( $"pt" < pt).select($"imei",$"app_id")
-      val curDf = df.filter( $"pt" === pt).select($"imei",$"app_id")
-      (curDf except oldDf).getCountAppId.output[NewUsersAppId](pt)
-      curDf.getCountAppId.output[ActiveUsersAppId](pt)
+      val oldDf = df.filter( $"pt" < pt).select($"imei",$"app_id") //历史用户
+      val curDf = df.filter( $"pt" === pt).select($"imei",$"app_id") //当日用户
+      (curDf except oldDf).getCountAppId.output[NewUsersAppId](pt)     //计算新增用户
+      curDf.getCountAppId.output[ActiveUsersAppId](pt)                 //计算活跃用户
 
-      val oldDfNoAppId = df.filter( $"pt" < pt).select($"imei")
+      val oldDfNoAppId = df.filter( $"pt" < pt).select($"imei")    //与上面类似，只是不带appid
       val curDfNoAppId = df.filter( $"pt" === pt).select($"imei")
       (curDfNoAppId except oldDfNoAppId).getCountNoAppId.output[NewUsersNoAppId](pt)
       curDfNoAppId.getCountNoAppId.output[ActiveUsersNoAppId](pt)
